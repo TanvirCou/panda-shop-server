@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors({
-    origin: "https://panda-shop-webapps.netlify.app",
+    origin: "http://127.0.0.1:5173",
     credentials: true
   }));
 
