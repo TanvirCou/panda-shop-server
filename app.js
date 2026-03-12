@@ -8,17 +8,19 @@ const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(cors({
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+  cors({
     origin: "https://panda-shop-webapps.netlify.app",
-    credentials: true
-  }));
+    credentials: true,
+  })
+);
 
 //config
-if(process.env.NODE_ENV !== "PRODUCTION") {
-    require("dotenv").config({
-        path: "config/.env",
-    });
+if (process.env.NODE_ENV !== "PRODUCTION") {
+  require("dotenv").config({
+    path: "config/.env",
+  });
 }
 
 const user = require("./controller/user");
@@ -38,9 +40,6 @@ app.use("/api/coupon-code", couponCode);
 app.use("/api/payment", payment);
 app.use("/api/order", order);
 app.use("/api/withdraw", withdraw);
-
-
-
 
 app.use(ErrorHandler);
 

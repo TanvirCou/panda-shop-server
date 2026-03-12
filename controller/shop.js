@@ -47,7 +47,7 @@ router.post("/shop-register", async(req, res, next) => {
         // });
 
     const activationToken = createActivationToken(shop);
-    const activationUrl = `http://127.0.0.1:5173/shop-activation/${activationToken}`;
+    const activationUrl = `https://panda-shop-webapps.netlify.app/shop-activation/${activationToken}`;
 
     try {
         await sendMail({
@@ -85,7 +85,7 @@ router.post("/shop-activation", catchAsyncErrors(async(req, res, next) => {
         }
     
         const {name, email, password, avatar, phoneNumber, address, zipCode} = newShop;
-        console.log({name, email, password, avatar, phoneNumber, address, zipCode});
+        // console.log({name, email, password, avatar, phoneNumber, address, zipCode});
     
         let shop = await Shop.findOne({ email });
         if (shop) {
@@ -217,7 +217,7 @@ router.put("/update-shop-info", isShop, catchAsyncErrors(async(req, res, next) =
       }
 }));
 
-// all sellers --- for admin
+
 router.get(
     "/admin-all-shops",
     isAuthenticated,
@@ -237,7 +237,7 @@ router.get(
     })
   );
 
-// delete seller ---admin
+
 router.delete(
   "/delete-shop/:id",
   isAuthenticated,
@@ -264,7 +264,7 @@ router.delete(
   })
 );
 
-// update seller withdraw methods --- sellers
+
 router.put(
   "/update-payment-methods",
   isShop,
@@ -286,7 +286,7 @@ router.put(
   })
 );
 
-// delete seller withdraw merthods --- only seller
+
 router.delete(
   "/delete-withdraw-method",
   isShop,
@@ -311,5 +311,81 @@ router.delete(
     }
   })
 );
+
+
+router.post("/forgot-password", catchAsyncErrors(async (req, res, next) => {
+    const { email } = req.body;
+    const shop = await Shop.findOne({ email });
+
+    if (!shop) {
+        return next(new ErrorHandler("No shop account found with this email", 404));
+    }
+
+    const crypto = require("crypto");
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    shop.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    shop.resetPasswordTime = Date.now() + 30 * 60 * 1000; 
+    await shop.save({ validateBeforeSave: false });
+
+    const resetUrl = `https://panda-shop-webapps.netlify.app/shop/reset-password/${resetToken}`;
+
+    try {
+        await sendMail({
+            email: shop.email,
+            subject: "PandaShop Seller — Password Reset",
+            text: `Hello ${shop.name},\n\nYou requested a password reset for your seller account.\n\nClick the link below to reset your password (valid for 30 minutes):\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.`,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Password reset link sent to ${shop.email}`,
+        });
+    } catch (err) {
+        shop.resetPasswordToken = undefined;
+        shop.resetPasswordTime = undefined;
+        await shop.save({ validateBeforeSave: false });
+        return next(new ErrorHandler("Failed to send email. Try again later.", 500));
+    }
+}));
+
+
+router.post("/reset-password/:token", catchAsyncErrors(async (req, res, next) => {
+    const crypto = require("crypto");
+    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+    const shop = await Shop.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordTime: { $gt: Date.now() },
+    });
+
+    if (!shop) {
+        return next(new ErrorHandler("Reset token is invalid or has expired", 400));
+    }
+
+    const { password, confirmPassword } = req.body;
+
+    if (!password || !confirmPassword) {
+        return next(new ErrorHandler("Please provide both password fields", 400));
+    }
+
+    if (password !== confirmPassword) {
+        return next(new ErrorHandler("Passwords do not match", 400));
+    }
+
+    if (password.length < 6) {
+        return next(new ErrorHandler("Password must be at least 6 characters", 400));
+    }
+
+    shop.password = password;
+    shop.resetPasswordToken = undefined;
+    shop.resetPasswordTime = undefined;
+    await shop.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Password reset successful! You can now log in.",
+    });
+}));
 
 module.exports = router;

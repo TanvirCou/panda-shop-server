@@ -1,5 +1,6 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const router = express.Router();
 const User = require("../model/user");
 const ErrorHandler = require("../utils/ErrorHandler");
@@ -40,7 +41,7 @@ router.post("/register", async(req, res, next) => {
         // });
 
     const activationToken = createActivationToken(user);
-    const activationUrl = `http://127.0.0.1:5173/activation/${activationToken}`;
+    const activationUrl = `https://panda-shop-webapps.netlify.app/activation/${activationToken}`;
 
     try {
         await sendMail({
@@ -53,6 +54,8 @@ router.post("/register", async(req, res, next) => {
             message: `Please check your email: ${user.email} to activate your account`
         });
     } catch (err) {
+      console.log(err);
+      
         return next(new ErrorHandler(err.message, 500));
     }
 } catch(err) {
@@ -288,7 +291,7 @@ router.put(
     })
   );
 
-// all users --- for admin
+
 router.get(
   "/admin-all-users",
   isAuthenticated,
@@ -308,7 +311,7 @@ router.get(
   })
 );
 
-// delete users --- admin
+
 router.delete(
   "/delete-user/:id",
   isAuthenticated,
@@ -335,5 +338,93 @@ router.delete(
   })
 );
   
+
+
+router.post(
+  "/forgot-password",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const user = await User.findOne({ email: req.body.email });
+      if (!user) {
+        return next(new ErrorHandler("User not found with this email", 404));
+      }
+
+      
+      const resetToken = crypto.randomBytes(32).toString("hex");
+
+      user.resetPasswordToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+      user.resetPasswordTime = Date.now() + 30 * 60 * 1000; 
+      await user.save({ validateBeforeSave: false });
+
+      const resetUrl = `https://panda-shop-webapps.netlify.app/reset-password/${resetToken}`;
+
+      await sendMail({
+        email: user.email,
+        subject: "PandaShop – Password Reset Request",
+        text: `Hi ${user.name},\n\nClick the link below to reset your password. This link is valid for 30 minutes:\n\n${resetUrl}\n\nIf you didn't request this, please ignore this email.`,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Password reset link sent to ${user.email}`,
+      });
+    } catch (error) {
+      
+      const user = await User.findOne({ email: req.body.email });
+      if (user) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordTime = undefined;
+        await user.save({ validateBeforeSave: false });
+      }
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+
+router.post(
+  "/reset-password/:token",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { password, confirmPassword } = req.body;
+
+      if (password !== confirmPassword) {
+        return next(new ErrorHandler("Passwords do not match", 400));
+      }
+
+      
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+
+      const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordTime: { $gt: Date.now() },
+      });
+
+      if (!user) {
+        return next(
+          new ErrorHandler("Reset token is invalid or has expired", 400)
+        );
+      }
+
+      user.password = password;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordTime = undefined;
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Password reset successful. You can now sign in.",
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
 
 module.exports = router;
