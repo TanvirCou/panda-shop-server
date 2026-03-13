@@ -17,7 +17,7 @@ if(process.env.NODE_ENV !== "PRODUCTION") {
 connectDatabase();
 
 const server = app.listen(process.env.PORT, () => {
-    console.log(`Server is running`);
+    console.log(`Server is running at ${process.env.PORT}`);
 });
 
 //Unhandled Promise Rejection
