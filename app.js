@@ -23,6 +23,10 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
   });
 }
 
+app.get("/",(req,res)=>{
+  res.status(200).send("Panda shop server is running!")
+})
+
 const user = require("./controller/user");
 const shop = require("./controller/shop");
 const product = require("./controller/product");
