@@ -9,7 +9,7 @@
 
 This is the backend API for **PandaShop**, a powerful multi-vendor e-commerce platform. It provides a robust, secure, and scalable foundation for managing users, products, orders, payments, and multi-vendor dashboards.
 
-Built with **Node.js**, **Express**, and **MongoDB**, it implements high-standard features like JWT-based authentication with refresh tokens, automated email systems for account activation and password resets, and integrated Stripe payments.
+Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensive suite of features including JWT-based authentication with refresh tokens, automated email systems for account activation, and integrated Stripe payments. It also handles the complete e-commerce lifecycle: **multi-vendor product management**, **time-limited sale events**, **order processing with real-time status updates**, and a **verified review system**.
 
 ---
 
@@ -51,13 +51,12 @@ Built with **Node.js**, **Express**, and **MongoDB**, it implements high-standar
 | Category | Technology |
 |---|---|
 | **Runtime** | Node.js |
-| **Framework** | Express.js |
-| **Database** | MongoDB (via Mongoose) |
-| **Authentication** | JSON Web Token (JWT) + BcryptJS |
-| **Payment Gateway** | Stripe API |
-| **Email Service** | Nodemailer (SMTP) |
-| **File Handling** | Cloudinary (for images) |
-| **Development** | Nodemon, Dotenv |
+| **Framework** | Express.js 4.18.2 |
+| **Database** | MongoDB (via Mongoose) 8.0.3 |
+| **Authentication** | JSON Web Token (JWT) 9.0.2 + BcryptJS 2.4.3 |
+| **Payment Gateway** | Stripe API 14.16.0 |
+| **Email Service** | Nodemailer (SMTP) 6.9.8 |
+| **Development** | Nodemon 3.0.2 + Dotenv 16.3.1 |
 
 ---
 
