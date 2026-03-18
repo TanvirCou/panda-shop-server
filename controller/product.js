@@ -6,6 +6,7 @@ const Order = require("../model/order");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const { isShop, isAuthenticated } = require("../middleware/auth");
 const ErrorHandler = require("../utils/ErrorHandler");
+const { generateEmbedding } = require("../utils/gemini");
 
 router.post("/create-product", catchAsyncErrors(async(req, res, next) => {
     try {
@@ -17,6 +18,12 @@ router.post("/create-product", catchAsyncErrors(async(req, res, next) => {
             const productData = req.body;
             productData.shop = shop;
             
+            const textToEmbed = `${productData.name} ${productData.description} ${productData.category} ${productData.tags || ""}`;
+            const embedding = await generateEmbedding(textToEmbed);
+            if (embedding && embedding.length > 0) {
+              productData.embedding = embedding;
+            }
+
             const product = await Product.create(productData);
             res.status(201).json({
                 success: true,

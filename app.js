@@ -12,6 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: "https://panda-shop-webapps.netlify.app",
+    // origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -35,6 +36,7 @@ const couponCode = require("./controller/couponCode");
 const payment = require("./controller/payment");
 const order = require("./controller/order");
 const withdraw = require("./controller/withdraw");
+const ai = require("./controller/ai");
 
 app.use("/api/user", user);
 app.use("/api/shop", shop);
@@ -44,6 +46,7 @@ app.use("/api/coupon-code", couponCode);
 app.use("/api/payment", payment);
 app.use("/api/order", order);
 app.use("/api/withdraw", withdraw);
+app.use("/api/ai", ai);
 
 app.use(ErrorHandler);
 

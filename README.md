@@ -3,13 +3,14 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20-green)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express.js-4-lightgrey)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Latest-green)](https://www.mongodb.com/)
+[![Gemini](https://img.shields.io/badge/Gemini_AI-API-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 [![Stripe](https://img.shields.io/badge/Stripe-API-blue)](https://stripe.com/)
 
 ## Overview
 
-This is the backend API for **PandaShop**, a powerful multi-vendor e-commerce platform. It provides a robust, secure, and scalable foundation for managing users, products, orders, payments, and multi-vendor dashboards.
+**PandaShop Server** is the architectural backbone of a high-performance, AI-powered multi-vendor e-commerce platform. Engineered for scalability and hardened for security, it provides the core infrastructure unifying user management, complex product catalogs, real-time order processing, and comprehensive vendor dashboards.
 
-Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensive suite of features including JWT-based authentication with refresh tokens, automated email systems for account activation, and integrated Stripe payments. It also handles the complete e-commerce lifecycle: **multi-vendor product management**, **time-limited sale events**, **order processing with real-time status updates**, and a **verified review system**.
+At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to deliver a robust suite of REST API services. Key capabilities now include deep **Google Gemini AI** integration—powering semantic vector-based product searches and real-time conversational intent extraction. The backend further fortifies the e-commerce lifecycle with JWT-based active session management, automated SMTP email dispatch, secure Stripe payment webhooks, **time-limited cryptographic sale events**, and a **verified customer review system**.
 
 ---
 
@@ -34,9 +35,14 @@ Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensiv
 - **Account Verification:** Link-based email activation for new accounts.
 - **Password Security:** Multi-layered hashing using `bcryptjs`.
 
+### 🧠 AI Search Engine (New)
+- **Semantic Text Embeddings:** Deep integration with Google's Gemini AI to instantly vectorize product titles, descriptions, and user queries.
+- **In-Memory Cosine Similarity:** Custom mathematical matching algorithm running efficiently in Node.js to compute precise similarity ranking scores on the fly.
+- **Conversational Parsing:** Parallel extraction of intent (budget limits, explicit categories, and dynamic keywords) from natural language user prompts.
+
 ### 🏪 Multi-Vendor Core
 - **Vendor Management:** Comprehensive lifecycle for shops (registration, approval, balance tracking).
-- **Product & Inventory:** Advanced CRUD for products with category-based filtering and stock management.
+- **Product & Inventory:** Advanced CRUD for products with category-based filtering and stock management. Automatic generation of vector embeddings upon creation.
 - **Event Engine:** Sale event system with time-based triggers and automated discounting.
 
 ### 💳 Payments & Logistics
@@ -52,7 +58,8 @@ Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensiv
 |---|---|
 | **Runtime** | Node.js |
 | **Framework** | Express.js 4.18.2 |
-| **Database** | MongoDB (via Mongoose) 8.0.3 |
+| **Database** | MongoDB (via Mongoose 8.0.3) |
+| **AI Integration** | Google Gemini API (@google/genai) 1.46.0 |
 | **Authentication** | JSON Web Token (JWT) 9.0.2 + BcryptJS 2.4.3 |
 | **Payment Gateway** | Stripe API 14.16.0 |
 | **Email Service** | Nodemailer (SMTP) 6.9.8 |
@@ -64,6 +71,7 @@ Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensiv
 
 | Base Route | Description |
 |---|---|
+| `/api/ai` | AI-powered semantic and conversational product search |
 | `/api/user` | User authentication, profile, and address management |
 | `/api/shop` | Shop registration, authentication, and shop details |
 | `/api/product` | Product CRUD, reviews, and inventory |
@@ -83,6 +91,7 @@ Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensiv
 ├── db/                 # Database connection logic
 ├── middleware/         # Auth, Error handling, and validation
 ├── model/              # Mongoose schemas (Data Logic)
+├── scripts/            # Database migration and generative AI utility scripts
 ├── utils/              # Helper functions (JWT, Email, Error classes)
 ├── app.js              # Express app initialization
 └── server.js           # Server entry point
@@ -111,6 +120,7 @@ Built with **Node.js**, **Express**, and **MongoDB**, it provides a comprehensiv
    JWT_SECRET_KEY=<your-secret>
    JWT_EXPIRES=7d
    ACTIVATION_SECRET=<your-activation-secret>
+   GEMINI_API_KEY=<your-google-gemini-key>
    STRIPE_API_KEY=<your-stripe-key>
    STRIPE_SECRET_KEY=<your-stripe-secret>
    SMTP_HOST=<your-smtp-host>
