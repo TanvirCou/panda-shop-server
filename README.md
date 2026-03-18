@@ -1,4 +1,4 @@
-# 🚀 PandaShop Server — Backend for Multi-Vendor E-Commerce
+# 🚀 PandaShop Server — Backend for Multi-Vendor E-Commerce Platform
 
 [![Node.js](https://img.shields.io/badge/Node.js-20-green)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express.js-4-lightgrey)](https://expressjs.com/)
