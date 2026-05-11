@@ -1,3 +1,5 @@
 node_modules/
 config/
 testDim.js
+sync-pinecone.js
+sync-faq-pinecone.js

@@ -2,19 +2,8 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../model/product");
 const { extractSearchIntent, generateEmbedding } = require("../utils/gemini");
-
-function cosineSimilarity(vecA, vecB) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+const mongoose = require("mongoose");
+const { getPineconeIndex } = require("../db/pinecone");
 
 router.post("/search", async (req, res, next) => {
   try {
@@ -28,38 +17,65 @@ router.post("/search", async (req, res, next) => {
       extractSearchIntent(prompt)
     ]);
     
-    const dbFilter = { embedding: { $exists: true, $not: { $size: 0 } } };
-    
-    if (intent && (intent.minPrice !== null || intent.maxPrice !== null)) {
-      dbFilter.discountPrice = {};
-      if (intent.minPrice !== null) dbFilter.discountPrice.$gte = intent.minPrice;
-      if (intent.maxPrice !== null) dbFilter.discountPrice.$lte = intent.maxPrice;
-    }
-
     let products = [];
     if (promptEmbedding && promptEmbedding.length > 0) {
-       const allProducts = await Product.find(dbFilter);
        
-       const scoredProducts = allProducts.map(p => {
-         let score = cosineSimilarity(promptEmbedding, p.embedding);
-         
-         if (intent && intent.category && p.category) {
-            const intentCat = intent.category.toLowerCase().replace(/s$/, '').trim();
-            const pCat = p.category.toLowerCase().replace(/s$/, '').trim();
-            
-            if (pCat.includes(intentCat) || intentCat.includes(pCat)) {
-                score += 0.15; 
-            }
-         }
+       const index = getPineconeIndex();
+       
+       if (index) {
+          const queryResponse = await index.query({
+             vector: promptEmbedding,
+             topK: 30,
+             includeValues: false,
+             includeMetadata: true,   // need metadata for category boost
+             namespace: 'search-products'
+          });
+          
+          if (queryResponse.matches && queryResponse.matches.length > 0) {
+             
 
-         return { product: p, score };
-       });
+             // Apply category boost (+0.15) matching the original logic
+             const intentCat = intent?.category
+               ? intent.category.toLowerCase().replace(/s$/, '').trim()
+               : null;
 
-       const relevantProducts = scoredProducts.filter(p => p.score > 0.55);
+             const scoredMatches = queryResponse.matches
+               .filter(m => mongoose.Types.ObjectId.isValid(m.id))
+               .map(m => {
+                 let score = m.score;
+                 if (intentCat && m.metadata?.category) {
+                   const pCat = m.metadata.category.toLowerCase().replace(/s$/, '').trim();
+                   if (pCat.includes(intentCat) || intentCat.includes(pCat)) {
+                     score += 0.15;   // boost for category match
+                   }
+                 }
+                 return { id: m.id, score };
+               })
+               .filter(m => m.score > 0.58)   // raised threshold to naturally cut off irrelevant items
+               .sort((a, b) => b.score - a.score)
+               .slice(0, 10);
 
-       relevantProducts.sort((a, b) => b.score - a.score);
+             const pineconeIds = scoredMatches.map(m => m.id);
 
-       products = relevantProducts.slice(0, 10).map(p => p.product);
+             if (pineconeIds.length === 0) {
+               return res.status(200).json({ success: true, intent, products: [] });
+             }
+             
+             const dbFilter = { _id: { $in: pineconeIds } };
+             if (intent && (intent.minPrice !== null || intent.maxPrice !== null)) {
+               dbFilter.discountPrice = {};
+               if (intent.minPrice !== null) dbFilter.discountPrice.$gte = intent.minPrice;
+               if (intent.maxPrice !== null) dbFilter.discountPrice.$lte = intent.maxPrice;
+             }
+             
+             const matchedProducts = await Product.find(dbFilter);
+             
+             // Preserve Pinecone score order
+             products = pineconeIds
+               .map(id => matchedProducts.find(p => p._id.toString() === id))
+               .filter(p => p != null);
+          }
+       }
     }
 
     res.status(200).json({

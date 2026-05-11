@@ -7,6 +7,7 @@ const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const { isShop, isAuthenticated } = require("../middleware/auth");
 const ErrorHandler = require("../utils/ErrorHandler");
 const { generateEmbedding } = require("../utils/gemini");
+const { getPineconeIndex } = require("../db/pinecone");
 
 router.post("/create-product", catchAsyncErrors(async(req, res, next) => {
     try {
@@ -18,13 +19,89 @@ router.post("/create-product", catchAsyncErrors(async(req, res, next) => {
             const productData = req.body;
             productData.shop = shop;
             
-            const textToEmbed = `${productData.name} ${productData.description} ${productData.category} ${productData.tags || ""}`;
+            const textToEmbed = `${productData.name} ${productData.description} ${productData.category} ${productData.tags || ""} ${productData.shop.name || ""} ${productData.discountPrice || ""}`;
+
             const embedding = await generateEmbedding(textToEmbed);
-            if (embedding && embedding.length > 0) {
-              productData.embedding = embedding;
-            }
 
             const product = await Product.create(productData);
+
+            const index = getPineconeIndex();
+            
+            if (embedding && embedding.length > 0 && index) {
+              try {
+                await index.upsert({
+                  records: [{
+                    id: product._id.toString(),
+                    values: embedding,
+                  metadata: {
+                      name: product.name || "",
+                      description: product.description || "",
+                      category: product.category || "",
+                      image: JSON.stringify(product.images || []),
+                      shopName: product.shop?.name || "",
+                      shopPhone: product.shop?.phoneNumber || "",
+                      shopEmail: product.shop?.email || "",
+                      shopAddress: product.shop?.address || "",
+                      ratings: product.ratings || 0,
+                      reviews: JSON.stringify(product.reviews || []),
+                      stock: product.stock || 0,
+                      tags: product.tags || "",
+                      price: product.discountPrice || 0,
+                  }
+                  }],
+                  namespace: 'search-products'
+                });
+              } catch (pineconeErr) {
+                console.error("Error saving to Pinecone (search-products):", pineconeErr);
+              }
+            }
+
+            try {
+              const chatbotText = `
+                  Product: ${product.name}
+                  Category: ${product.category}
+                  Description: ${product.description}
+                  Tags: ${product.tags || "none"}
+                  Price: ${product.discountPrice} (Original: ${product.originalPrice || product.discountPrice})
+                  Stock available: ${product.stock} units
+                  Rating: ${product.ratings || "Not rated yet"}
+                  Shop name: ${product.shop?.name || "Unknown"}
+                  Shop email: ${product.shop?.email || "N/A"}
+                  Shop phone: ${product.shop?.phoneNumber || "N/A"}
+                  Shop address: ${product.shop?.address || "N/A"}
+              `.trim();
+
+              const chatbotEmbedding = await generateEmbedding(chatbotText);
+              if (chatbotEmbedding && chatbotEmbedding.length > 0 && index) {
+                await index.upsert({
+                  records: [{
+                    id: product._id.toString(),
+                    values: chatbotEmbedding,
+                    metadata: {
+                      text: chatbotText,          
+                      name: product.name || "",
+                      category: product.category || "",
+                      price: product.discountPrice || 0,
+                      originalPrice: product.originalPrice || 0,
+                      stock: product.stock || 0,
+                      ratings: product.ratings || 0,
+                      sold: product.sold_out || 0,
+                      tags: product.tags || "",
+                      description: product.description || "",
+                      image: JSON.stringify(product.images || []),
+                      shopName: product.shop?.name || "",
+                      shopEmail: product.shop?.email || "",
+                      shopPhone: product.shop?.phoneNumber || "",
+                      shopAddress: product.shop?.address || "",
+                      reviews: JSON.stringify(product.reviews || []),
+                    }
+                  }],
+                  namespace: 'chatbot'
+                });
+              }
+            } catch (chatbotErr) {
+              console.error("Error saving to Pinecone (chatbot):", chatbotErr);
+            }
             res.status(201).json({
                 success: true,
                 product
@@ -54,6 +131,18 @@ router.delete("/delete-product/:id", isShop, catchAsyncErrors(async(req, res, ne
         if(!product) {
             return next(new ErrorHandler("Product not found with this id", 500));
         } 
+
+        const index = getPineconeIndex();
+        if (index) {
+          try {
+            await Promise.all([
+              index.deleteOne({ id: req.params.id, namespace: 'search-products' }),
+              index.deleteOne({ id: req.params.id, namespace: 'chatbot' }),
+            ]);
+          } catch (pineconeErr) {
+            console.error("Error deleting from Pinecone:", pineconeErr);
+          }
+        }
 
         res.status(201).json({
             success: true,
@@ -123,7 +212,31 @@ router.put(
           { $set: { "cart.$[elem].isReviewed": true } },
           { arrayFilters: [{ "elem._id": productId }], new: true }
         );
-  
+
+        
+        try {
+          const index = getPineconeIndex();
+          if (index) {
+            await index.update({
+              id: product._id.toString(),
+              metadata: {
+                name: product.name || "",
+                category: product.category || "",
+                price: product.discountPrice || 0,
+                stock: product.stock || 0,
+                ratings: product.ratings || 0,
+                description: product.description || "",
+                image: JSON.stringify(product.images || []),
+                shopName: product.shop?.name || "",
+                reviews: JSON.stringify(product.reviews || []),
+              },
+              namespace: 'chatbot'
+            });
+          }
+        } catch (pineconeErr) {
+          console.error("Error updating Pinecone chatbot metadata after review:", pineconeErr);
+        }
+
         res.status(200).json({
           success: true,
           message: "Reviwed succesfully!",

@@ -4,13 +4,14 @@
 [![Express.js](https://img.shields.io/badge/Express.js-4-lightgrey)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Latest-green)](https://www.mongodb.com/)
 [![Gemini](https://img.shields.io/badge/Gemini_AI-API-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![Pinecone](https://img.shields.io/badge/Pinecone-Vector_DB-000000)](https://www.pinecone.io/)
 [![Stripe](https://img.shields.io/badge/Stripe-API-blue)](https://stripe.com/)
 
 ## Overview
 
 **PandaShop Server** is the architectural backbone of a high-performance, AI-powered multi-vendor e-commerce platform. Engineered for scalability and hardened for security, it provides the core infrastructure unifying user management, complex product catalogs, real-time order processing, and comprehensive vendor dashboards.
 
-At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to deliver a robust suite of REST API services. Key capabilities now include deep **Google Gemini AI** integration—powering semantic vector-based product searches and real-time conversational intent extraction. The backend further fortifies the e-commerce lifecycle with JWT-based active session management, automated SMTP email dispatch, secure Stripe payment webhooks, **time-limited cryptographic sale events**, and a **verified customer review system**.
+At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to deliver a robust suite of REST API services. Key capabilities now include deep **Google Gemini AI** and **Pinecone Vector Database** integration—powering semantic vector-based product searches and real-time conversational intent extraction. The backend further fortifies the e-commerce lifecycle with JWT-based active session management, automated SMTP email dispatch, secure Stripe payment webhooks, **time-limited cryptographic sale events**, and a **verified customer review system**.
 
 ---
 
@@ -36,10 +37,10 @@ At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to d
 - **Account Verification:** Link-based email activation for new accounts.
 - **Password Security:** Multi-layered hashing using `bcryptjs`.
 
-### 🧠 AI Search Engine (New)
+### 🧠 AI Search Engine
 
 - **Semantic Text Embeddings:** Deep integration with Google's Gemini AI to instantly vectorize product titles, descriptions, and user queries.
-- **In-Memory Cosine Similarity:** Custom mathematical matching algorithm running efficiently in Node.js to compute precise similarity ranking scores on the fly.
+- **Pinecone Vector DB:** Replaces manual in-memory cosine similarity with lightning-fast cloud vector retrieval, ranking the most semantically relevant products in milliseconds.
 - **Conversational Parsing:** Parallel extraction of intent (budget limits, explicit categories, and dynamic keywords) from natural language user prompts.
 
 ### 🏪 Multi-Vendor Core
@@ -63,6 +64,7 @@ At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to d
 | **Runtime**         | Node.js                                     |
 | **Framework**       | Express.js 4.18.2                           |
 | **Database**        | MongoDB (via Mongoose 8.0.3)                |
+| **Vector Database** | Pinecone 7.2.0                              |
 | **AI Integration**  | Google Gemini API (@google/genai) 1.46.0    |
 | **Authentication**  | JSON Web Token (JWT) 9.0.2 + BcryptJS 2.4.3 |
 | **Payment Gateway** | Stripe API 14.16.0                          |
@@ -95,7 +97,6 @@ At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to d
 ├── db/                 # Database connection logic
 ├── middleware/         # Auth, Error handling, and validation
 ├── model/              # Mongoose schemas (Data Logic)
-├── scripts/            # Database migration and generative AI utility scripts
 ├── utils/              # Helper functions (JWT, Email, Error classes)
 ├── app.js              # Express app initialization
 └── server.js           # Server entry point
@@ -128,6 +129,8 @@ At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to d
    JWT_EXPIRES=7d
    ACTIVATION_SECRET=<your-activation-secret>
    GEMINI_API_KEY=<your-google-gemini-key>
+   PINECONE_API_KEY=<your-pinecone-api-key>
+   PINECONE_INDEX_NAME=<your-pinecone-index-name>
    STRIPE_API_KEY=<your-stripe-key>
    STRIPE_SECRET_KEY=<your-stripe-secret>
    SMTP_HOST=<your-smtp-host>
@@ -139,11 +142,7 @@ At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to d
 4. **Run the server**
 
    ```bash
-   # Development mode
    npm run dev
-
-   # Production mode
-   npm start
    ```
 
 ---

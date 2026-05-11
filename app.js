@@ -11,8 +11,8 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: "https://panda-shop-webapps.netlify.app",
-    // origin: "http://localhost:5173",
+    // origin: "https://panda-shop-webapps.netlify.app",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -27,6 +27,7 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 app.get("/",(req,res)=>{
   res.status(200).send("Panda shop server is running!")
 })
+
 
 const user = require("./controller/user");
 const shop = require("./controller/shop");
