@@ -11,8 +11,8 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   cors({
-    // origin: "https://panda-shop-webapps.netlify.app",
-    origin: "http://localhost:5173",
+    origin: "https://panda-shop-webapps.netlify.app",
+    // origin: "http://localhost:5173",
     credentials: true,
   })
 );
