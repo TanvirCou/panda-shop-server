@@ -17,7 +17,7 @@ At its core, the system leverages **Node.js**, **Express**, and **MongoDB** to d
 
 ## 📺 Live API Base URL
 
-🔗 [https://panda-shop-server-production-v3.up.railway.app/](https://panda-shop-server-production-v3.up.railway.app/)
+🔗 [https://panda-shop-server-v3.up.railway.app/](https://panda-shop-server-v3.up.railway.app/)
 
 ---
 
